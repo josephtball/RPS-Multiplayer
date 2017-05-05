@@ -1,0 +1,9 @@
+#chat-box {
+	border: 1px solid #aaaaaa;
+	border-radius: 5px;
+	height: 12em;
+	margin-bottom: 5px;
+}
+#chat-input {
+	width: calc((10/12)*100%);
+}
