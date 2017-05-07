@@ -12,15 +12,109 @@ firebase.initializeApp(config);
 var database = firebase.database();
 
 // set DOM elements to variables
+$nameSection = $("#name-section");
 $nameInput = $("#name-input");
 $nameSubmit = $("#name-submit");
+
+$player1Div = $("#player1");
+$centerDiv = $("#center");
+$player2Div = $("#player2");
+
 $chatBox = $("#chat-box");
 $chatInput = $("#chat-input");
 $chatSubmit = $("#chat-submit");
 
 // other variables
 var playerName = "";
-var otherPlayer = "";
+var playerNum = 0;
+
+
+// enter new player
+$nameSubmit.on("click", function() {
+	event.preventDefault();
+
+	database.ref("players").once("value", function(snapshot) {
+		var numOfPlayers = snapshot.numChildren();
+
+		if (numOfPlayers < 2) {
+			playerName = $nameInput.val().trim();
+			
+			if (snapshot.child("1").exists()) {
+				database.ref("players/2").set({
+					name: playerName,
+					wins: 0,
+					losses: 0,
+				});
+				playerNum = 2;
+			} else {
+				database.ref("players/1").set({
+					name: playerName,
+					wins: 0,
+					losses: 0,
+				});
+				playerNum = 1;
+			}
+
+			$nameSection.empty();
+			var pTag = $("<p>").text("Hi "+playerName+"! You are Player "+playerNum+".");
+			$nameSection.append(pTag);
+		} else {
+			alert("Game is full. Please wait for a player to leave.");
+			$nameInput.val("");
+		}
+	});
+});
+
+// display current players
+database.ref("players").on("child_added", function() {
+	database.ref().on("value", function(snapshot) {
+		if (snapshot.val().players["1"] !== undefined) {
+			$player1Div.empty();
+
+			var h3Tag = $("<h3>").text(snapshot.val().players["1"].name);
+			var divTag = $("<div>").attr("id", "selection");
+			var pTag =$("<p>").html("Wins: <span id='wins'>"+snapshot.val().players["1"].wins+"</span> Losses: <span id='losses'>"+snapshot.val().players["1"].losses+"</span>");
+			$player1Div.append(h3Tag).append(divTag).append(pTag);
+		}
+		if(snapshot.val().players["2"] !== undefined) {
+			$player2Div.empty();
+
+			var h3Tag = $("<h3>").text(snapshot.val().players["2"].name);
+			var divTag = $("<div>").attr("id", "selection");
+			var pTag =$("<p>").html("Wins: <span id='wins'>"+snapshot.val().players["2"].wins+"</span> Losses: <span id='losses'>"+snapshot.val().players["2"].losses+"</span>");
+			$player2Div.append(h3Tag).append(divTag).append(pTag);
+		}
+		var numOfPlayers = snapshot.val().players;
+		numOfPlayers = Object.keys(numOfPlayers);
+		numOfPlayers = numOfPlayers.length;
+		console.log(numOfPlayers);
+		if (numOfPlayers === 2) {
+			$centerDiv.empty();
+			$centerDiv.html("<h3>Game Starts</h3>");
+		}
+	});
+});
+
+// remove disconnected players
+database.ref("players").on("child_removed", function(snapshot) {
+	console.log(snapshot.val());
+	
+	if (playerNum === 2) {
+		$player1Div.empty();
+
+		var h3Tag = $("<h3>").text("Waiting for Player 1");
+		$player1Div.append(h3Tag)
+	}
+	if(playerNum === 1) {
+		$player2Div.empty();
+
+		var h3Tag = $("<h3>").text("Waiting for Player 2");
+		$player2Div.append(h3Tag)
+	}
+});
+
+
+
 
 // get chat message function
 $chatSubmit.on("click", function() {
@@ -57,9 +151,4 @@ database.ref("disconnect").on("child_changed", function(snapshot){
 });
 
 // change connection status on load and unload
-database.ref("disconnect").update({
-	onlineState: true
-});
-database.ref("disconnect").onDisconnect().update({
-	onlineState: false
-});
+database.ref("players/"+playerNum).onDisconnect().remove();

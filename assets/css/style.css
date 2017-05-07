@@ -5,6 +5,29 @@
 	width: calc((10/12)*100%);
 }
 
+#game-section {
+	display: flex;
+}
+.gameDiv {
+	display: inline-flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 10em;
+	margin: 20px 10px;
+	border: 1px solid #000000;
+	border-radius: 5px;
+	padding: 10px;
+}
+h3 {
+	margin: 0;
+}
+#selection{
+	flex: 1;
+}
+p {
+	margin: 0;
+}
+
 #chat-box {
 	border: 1px solid #aaaaaa;
 	border-radius: 5px;
