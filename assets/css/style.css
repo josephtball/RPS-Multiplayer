@@ -1,9 +1,20 @@
+#name-section {
+	margin: 20px 0;
+}
+#name-input {
+	width: calc((10/12)*100%);
+}
+
 #chat-box {
 	border: 1px solid #aaaaaa;
 	border-radius: 5px;
 	height: 12em;
 	margin-bottom: 5px;
+	overflow: auto;
 }
 #chat-input {
 	width: calc((10/12)*100%);
+}
+.message {
+	margin: 0;
 }
