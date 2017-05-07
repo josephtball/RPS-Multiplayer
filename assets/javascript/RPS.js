@@ -27,18 +27,23 @@ $chatSubmit = $("#chat-submit");
 // other variables
 var playerName = "";
 var playerNum = 0;
+var otherPlayerName = "";
+var otherPlayerNum = 0;
 
 
 // enter new player
 $nameSubmit.on("click", function() {
 	event.preventDefault();
 
-	database.ref("players").once("value", function(snapshot) {
+	database.ref("players").once("value", newPlayer);
+});
+// new player function
+function newPlayer(snapshot) {
 		var numOfPlayers = snapshot.numChildren();
-
+		// if 2 players have started yet
 		if (numOfPlayers < 2) {
 			playerName = $nameInput.val().trim();
-			
+			// store new player as player 1 or 2
 			if (snapshot.child("1").exists()) {
 				database.ref("players/2").set({
 					name: playerName,
@@ -46,6 +51,7 @@ $nameSubmit.on("click", function() {
 					losses: 0,
 				});
 				playerNum = 2;
+				otherPlayerNum = 1;
 			} else {
 				database.ref("players/1").set({
 					name: playerName,
@@ -53,26 +59,29 @@ $nameSubmit.on("click", function() {
 					losses: 0,
 				});
 				playerNum = 1;
+				otherPlayerNum = 2;
 			}
 
 			$nameSection.empty();
 			var pTag = $("<p>").text("Hi "+playerName+"! You are Player "+playerNum+".");
 			$nameSection.append(pTag);
-		} else {
+		} else { // message for when 2 players are already playing a game
 			alert("Game is full. Please wait for a player to leave.");
 			$nameInput.val("");
 		}
-	});
-});
+}
+	
 
 // display current players
-database.ref("players").on("child_added", function() {
+database.ref("players").on("child_added", currentPlayers);
+
+function currentPlayers() {
 	database.ref().on("value", function(snapshot) {
 		if (snapshot.val().players["1"] !== undefined) {
 			$player1Div.empty();
 
 			var h3Tag = $("<h3>").text(snapshot.val().players["1"].name);
-			var divTag = $("<div>").attr("id", "selection");
+			var divTag = $("<div>").addClass("selection").attr("id", "selection1");
 			var pTag =$("<p>").html("Wins: <span id='wins'>"+snapshot.val().players["1"].wins+"</span> Losses: <span id='losses'>"+snapshot.val().players["1"].losses+"</span>");
 			$player1Div.append(h3Tag).append(divTag).append(pTag);
 		}
@@ -80,24 +89,26 @@ database.ref("players").on("child_added", function() {
 			$player2Div.empty();
 
 			var h3Tag = $("<h3>").text(snapshot.val().players["2"].name);
-			var divTag = $("<div>").attr("id", "selection");
+			var divTag = $("<div>").addClass("selection").attr("id", "selection2");
 			var pTag =$("<p>").html("Wins: <span id='wins'>"+snapshot.val().players["2"].wins+"</span> Losses: <span id='losses'>"+snapshot.val().players["2"].losses+"</span>");
 			$player2Div.append(h3Tag).append(divTag).append(pTag);
 		}
 		var numOfPlayers = snapshot.val().players;
 		numOfPlayers = Object.keys(numOfPlayers);
 		numOfPlayers = numOfPlayers.length;
-		console.log(numOfPlayers);
 		if (numOfPlayers === 2) {
-			$centerDiv.empty();
-			$centerDiv.html("<h3>Game Starts</h3>");
+			otherPlayerName = snapshot.val().players[otherPlayerNum].name;
+			database.ref().update({
+				turn: 1
+			});
+			database.ref("players").off("child_added", currentPlayers);
+			start();
 		}
 	});
-});
+}
 
 // remove disconnected players
 database.ref("players").on("child_removed", function(snapshot) {
-	console.log(snapshot.val());
 	
 	if (playerNum === 2) {
 		$player1Div.empty();
@@ -112,6 +123,86 @@ database.ref("players").on("child_removed", function(snapshot) {
 		$player2Div.append(h3Tag)
 	}
 });
+
+// start game
+function start() {
+database.ref("turn").on("value", function(snapshot) {
+	var turn = snapshot.val();
+	console.log("turn: "+turn);
+	console.log("playerNum: "+playerNum);
+	// player 1's turn
+	if (turn === 1) {
+		// if player 1
+		if (turn === playerNum) {
+			$("#selection1").empty();
+			$centerDiv.empty();
+
+			var rock = $("<h4>").text("Rock").addClass("choice").attr("id", "Rock");
+			var paper = $("<h4>").text("Paper").addClass("choice").attr("id", "Paper");
+			var scissors = $("<h4>").text("Scissors").addClass("choice").attr("id", "Scissors");
+
+			$("#selection1").append(rock).append(paper).append(scissors);
+
+			$centerDiv.append("<h3>It's Your Turn</h3>");
+
+			$(".choice").on("click", function() {
+				var choice = $(this).attr("id");
+
+				database.ref("players/1").update({
+					choice: choice
+				});
+				database.ref().update({
+					turn: 2
+				});
+
+			});
+		// if player 2
+		} else {
+			$centerDiv.empty();
+
+			$centerDiv.append("<h3>Waiting for Other Player</h3>");
+		}
+	// player 2's turn
+	} else if (turn === 2) {
+		// if player 2
+		if (turn === playerNum) {
+			$("#selection2").empty();
+			$centerDiv.empty();
+
+			var rock = $("<h4>").text("Rock").addClass("choice").attr("id", "Rock");
+			var paper = $("<h4>").text("Paper").addClass("choice").attr("id", "Paper");
+			var scissors = $("<h4>").text("Scissors").addClass("choice").attr("id", "Scissors");
+
+			$("#selection2").append(rock).append(paper).append(scissors);
+
+			$centerDiv.append("<h3>It's Your Turn</h3>");
+
+			$(".choice").on("click", function() {
+				var choice = $(this).attr("id");
+
+				database.ref("players/2").update({
+					choice: choice
+				});
+				database.ref().update({
+					turn: 3
+				});
+
+			});
+		// if player 1
+		} else {
+			$centerDiv.empty();
+
+			$centerDiv.append("<h3>Waiting for Other Player</h3>");
+		}
+	}
+});
+}
+
+
+
+
+
+
 
 
 
