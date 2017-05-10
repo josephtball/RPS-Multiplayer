@@ -118,25 +118,7 @@ function currentPlayers() {
 		}
 	});
 }
-/*
-// remove disconnected players
-database.ref("players").on("child_removed", function(snapshot) {
-	
-	if (playerNum === 2) {
-		$player1Div.empty();
 
-		var h3Tag = $("<h3>").text("Waiting for Player 1");
-		$player1Div.append(h3Tag)
-	}
-	if(playerNum === 1) {
-		$player2Div.empty();
-
-		var h3Tag = $("<h3>").text("Waiting for Player 2");
-		$player2Div.append(h3Tag)
-	}
-});
-database.ref("players/"+playerNum).onDisconnect().remove();
-*/
 // start game
 function player1Turn() {
 	console.log("player1Turn ran");
@@ -300,7 +282,6 @@ function decideWinner() {
 			wins: playerWins,
 			losses: playerLosses
 		});
-		console.log("update complete")
 	}).then(updateStats);
 }
 
@@ -311,11 +292,8 @@ function updateStats() {
 		turn: turn
 	});
 	database.ref("players/"+OPNum).on("value", function(snapshot) {
-		console.log(snapshot.val());
 		OPWins = snapshot.val().wins;
 		OPLosses = snapshot.val().losses;
-		console.log("OPWins: "+OPWins);
-		console.log("OPLosses: "+OPLosses);
 
 		$("#p"+playerNum+"Wins").text(playerWins);
 		$("#p"+playerNum+"Losses").text(playerLosses);
@@ -327,6 +305,36 @@ function updateStats() {
 	setTimeout(player1Turn, 2000);
 }
 
+database.ref().onDisconnect().update({
+		disconnect: true
+});
+
+// remove disconnected players
+database.ref("disconnect").on("value", function(snapshot) {
+	console.log("disconnect ran");
+	console.log(snapshot.val());
+	if (snapshot.val()) {
+		database.ref("disconnect").set(false);
+		database.ref("players/"+OPNum).remove();
+		turn = 0;
+		database.ref("turns").update({
+			turn: turn
+		});
+
+		if (playerNum === 2) {
+			$player1Div.empty();
+
+			var h3Tag = $("<h3>").text("Waiting for Player 1");
+			$player1Div.append(h3Tag)
+		}
+		if(playerNum === 1) {
+			$player2Div.empty();
+
+			var h3Tag = $("<h3>").text("Waiting for Player 2");
+			$player2Div.append(h3Tag)
+		}
+	}
+});
 
 
 
